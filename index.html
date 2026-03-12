@@ -16,40 +16,52 @@
 
 <script>
 
-async function consultar(){
+async function consultar() {
+  const matriculaDigitada = document.getElementById("matricula").value.trim();
 
-let matriculaDigitada = document.getElementById("matricula").value.trim()
+  if (!matriculaDigitada) {
+    document.getElementById("resultado").innerHTML = "Digite uma matrícula!";
+    return;
+  }
 
-let resposta = await fetch("seu_arquivo.csv")
-let texto = await resposta.text()
+  try {
+    const resposta = await fetch("seu_arquivo.csv");
+    const texto = await resposta.text();
 
-let linhas = texto.split("\n")
+    const linhas = texto.split("\n");
 
-for(let i=1;i<linhas.length;i++){
+    let encontrado = false;
 
-let colunas = linhas[i].split(",")
+    for (let i = 1; i < linhas.length; i++) {
+      const linha = linhas[i].trim();
+      if (!linha) continue; // ignora linha vazia
 
-let matricula = colunas[0]
-let lat = colunas[1]
-let long = colunas[2]
+      const colunas = linha.split("\t").map(c => c.trim()); // divide por tab
 
-if(matricula == matriculaDigitada){
+      const matricula = colunas[0];
+      const latitude = colunas[1];
+      const longitude = colunas[2];
 
-let linkMapa = "https://www.google.com/maps?q=" + lat + "," + long
+      if (matricula === matriculaDigitada) {
+        const linkMapa = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        document.getElementById("resultado").innerHTML =
+          `Local encontrado:<br>
+           Latitude: ${latitude}<br>
+           Longitude: ${longitude}<br><br>
+           <a href="${linkMapa}" target="_blank">Abrir no mapa</a>`;
+        encontrado = true;
+        break;
+      }
+    }
 
-document.getElementById("resultado").innerHTML =
-"Local encontrado:<br>" +
-"Latitude: " + lat + "<br>" +
-"Longitude: " + long + "<br><br>" +
-"<a href='"+linkMapa+"' target='_blank'>Abrir no mapa</a>"
+    if (!encontrado) {
+      document.getElementById("resultado").innerHTML = "Matrícula não encontrada";
+    }
 
-return
-}
-
-}
-
-document.getElementById("resultado").innerHTML = "Matrícula não encontrada"
-
+  } catch (erro) {
+    console.error("Erro ao carregar o arquivo CSV:", erro);
+    document.getElementById("resultado").innerHTML = "Erro ao acessar os dados";
+  }
 }
 
 </script>

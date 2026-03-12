@@ -1,159 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>Consulta de Matrículas</title>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-<style>
-
-body{
-font-family:Arial;
-margin:20px;
-}
-
-#map{
-height:420px;
-margin-top:20px;
-}
-
-#drop{
-border:2px dashed #777;
-padding:30px;
-text-align:center;
-margin-bottom:20px;
-background:#f7f7f7;
-}
-
-input{
-padding:8px;
-font-size:16px;
-}
-
-button{
-padding:8px 15px;
-font-size:16px;
-}
-
-</style>
-
+<meta charset="UTF-8">
+<title>Consulta de Matrícula</title>
 </head>
 
 <body>
 
-<h2>Consulta de Matrículas</h2>
-
-<div id="drop">
-Arraste seu arquivo CSV aqui
-</div>
+<h2>Consulta de Matrícula</h2>
 
 <input type="text" id="matricula" placeholder="Digite a matrícula">
-<button onclick="buscar()">Buscar</button>
+<button onclick="consultar()">Consultar</button>
 
-<p id="status"></p>
 <p id="resultado"></p>
-
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-const banco = new Map()
+async function consultar(){
 
-// mapa
-var map = L.map('map').setView([-29.69,-53.80],13)
+let matriculaDigitada = document.getElementById("matricula").value
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:19
-}).addTo(map)
-
-var marker
-
-// área de arrastar CSV
-const drop = document.getElementById("drop")
-
-drop.addEventListener("dragover", e=>{
-e.preventDefault()
-})
-
-drop.addEventListener("drop", e=>{
-e.preventDefault()
-
-const file = e.dataTransfer.files[0]
-
-const reader = new FileReader()
-
-reader.onload = function(event){
-
-let texto = event.target.result
+let resposta = await fetch("seu_arquivo.csv")
+let texto = await resposta.text()
 
 let linhas = texto.split("\n")
 
-let separador = ","
+for(let i = 1; i < linhas.length; i++){
 
-if(linhas[0].includes(";")){
-separador = ";"
-}
+let colunas = linhas[i].split(",")
 
-for(let i=1;i<linhas.length;i++){
+let matricula = colunas[0]
+let nome = colunas[1]
 
-let col = linhas[i].split(separador)
-
-if(col.length < 3) continue
-
-let m = col[0].trim()
-
-let lat = parseFloat(col[1].replace(",","."))
-let lon = parseFloat(col[2].replace(",","."))
-
-if(m){
-banco.set(m,{lat,lon})
-}
-
-}
-
-document.getElementById("status").innerHTML =
-"Banco carregado: "+banco.size+" matrículas"
-
-}
-
-reader.readAsText(file)
-
-})
-
-// função de busca
-
-function buscar(){
-
-let m = document.getElementById("matricula").value.trim()
-
-let res = banco.get(m)
-
-if(!res){
+if(matricula == matriculaDigitada){
 
 document.getElementById("resultado").innerHTML =
-"Matrícula não encontrada"
+"Nome: " + nome
 
 return
 }
 
-let lat = res.lat
-let lon = res.lon
-
-document.getElementById("resultado").innerHTML =
-"Latitude: "+lat+
-"<br>Longitude: "+lon+
-"<br><br><a target='_blank' href='https://www.google.com/maps?q="+lat+","+lon+"'>Abrir no Google Maps</a>"
-
-if(marker){
-map.removeLayer(marker)
 }
 
-marker = L.marker([lat,lon]).addTo(map)
-
-map.setView([lat,lon],17)
+document.getElementById("resultado").innerHTML =
+"Matrícula não encontrada"
 
 }
 
@@ -161,3 +51,4 @@ map.setView([lat,lon],17)
 
 </body>
 </html>
+

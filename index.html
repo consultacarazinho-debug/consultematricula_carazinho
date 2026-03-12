@@ -4,43 +4,38 @@
 <meta charset="UTF-8">
 <title>Consulta de Matrícula</title>
 </head>
-
 <body>
-
 <h2>Consultar Localização pela Matrícula</h2>
-
 <input type="text" id="matricula" placeholder="Digite a matrícula">
 <button onclick="consultar()">Consultar</button>
-
 <p id="resultado"></p>
 
 <script>
-
 async function consultar() {
   const matriculaDigitada = document.getElementById("matricula").value.trim();
-
   if (!matriculaDigitada) {
     document.getElementById("resultado").innerHTML = "Digite uma matrícula!";
     return;
   }
-
   try {
     const resposta = await fetch("seu_arquivo.csv");
     const texto = await resposta.text();
-
     const linhas = texto.split("\n");
-
-    let encontrado = false;
 
     for (let i = 1; i < linhas.length; i++) {
       const linha = linhas[i].trim();
-      if (!linha) continue; // ignora linha vazia
+      if (!linha) continue;
 
-      const colunas = linha.split("\t").map(c => c.trim()); // divide por tab
+      // Tenta separar por vírgula, se não tiver, tenta por tabulação
+      let colunas = linha.split(",");
+      if (colunas.length < 3) {
+        colunas = linha.split("\t");
+      }
+      if (colunas.length < 3) continue; // ignora linhas inválidas
 
-      const matricula = colunas[0];
-      const latitude = colunas[1];
-      const longitude = colunas[2];
+      const matricula = colunas[0].trim();
+      const latitude = colunas[1].trim();
+      const longitude = colunas[2].trim();
 
       if (matricula === matriculaDigitada) {
         const linkMapa = `https://www.google.com/maps?q=${latitude},${longitude}`;
@@ -49,22 +44,15 @@ async function consultar() {
            Latitude: ${latitude}<br>
            Longitude: ${longitude}<br><br>
            <a href="${linkMapa}" target="_blank">Abrir no mapa</a>`;
-        encontrado = true;
-        break;
+        return;
       }
     }
-
-    if (!encontrado) {
-      document.getElementById("resultado").innerHTML = "Matrícula não encontrada";
-    }
-
-  } catch (erro) {
-    console.error("Erro ao carregar o arquivo CSV:", erro);
+    document.getElementById("resultado").innerHTML = "Matrícula não encontrada";
+  } catch (e) {
+    console.error("Erro:", e);
     document.getElementById("resultado").innerHTML = "Erro ao acessar os dados";
   }
 }
-
 </script>
-
 </body>
 </html>

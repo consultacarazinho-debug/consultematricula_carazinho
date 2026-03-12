@@ -7,7 +7,7 @@
 
 <body>
 
-<h2>Consulta de Matrícula</h2>
+<h2>Consultar Localização pela Matrícula</h2>
 
 <input type="text" id="matricula" placeholder="Digite a matrícula">
 <button onclick="consultar()">Consultar</button>
@@ -18,32 +18,37 @@
 
 async function consultar(){
 
-let matriculaDigitada = document.getElementById("matricula").value
+let matriculaDigitada = document.getElementById("matricula").value.trim()
 
 let resposta = await fetch("seu_arquivo.csv")
 let texto = await resposta.text()
 
 let linhas = texto.split("\n")
 
-for(let i = 1; i < linhas.length; i++){
+for(let i=1;i<linhas.length;i++){
 
 let colunas = linhas[i].split(",")
 
 let matricula = colunas[0]
-let nome = colunas[1]
+let lat = colunas[1]
+let long = colunas[2]
 
 if(matricula == matriculaDigitada){
 
+let linkMapa = "https://www.google.com/maps?q=" + lat + "," + long
+
 document.getElementById("resultado").innerHTML =
-"Nome: " + nome
+"Local encontrado:<br>" +
+"Latitude: " + lat + "<br>" +
+"Longitude: " + long + "<br><br>" +
+"<a href='"+linkMapa+"' target='_blank'>Abrir no mapa</a>"
 
 return
 }
 
 }
 
-document.getElementById("resultado").innerHTML =
-"Matrícula não encontrada"
+document.getElementById("resultado").innerHTML = "Matrícula não encontrada"
 
 }
 
@@ -51,4 +56,3 @@ document.getElementById("resultado").innerHTML =
 
 </body>
 </html>
-

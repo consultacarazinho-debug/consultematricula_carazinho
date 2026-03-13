@@ -36,6 +36,17 @@ let mapa
 let marcadorUsuario
 let marcadorMatricula
 
+const iconeUsuario = L.icon({
+iconUrl:'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+iconSize:[32,32],
+iconAnchor:[16,32]
+})
+
+const iconeMatricula = L.icon({
+iconUrl:'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+iconSize:[32,32],
+iconAnchor:[16,32]
+})
 
 function distancia(lat1, lon1, lat2, lon2){
 
@@ -55,7 +66,6 @@ const c = 2 * Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
 return R*c
 
 }
-
 
 function pegarLocalizacao(){
 
@@ -78,8 +88,6 @@ longitude:pos.coords.longitude
 
 }
 
-
-
 async function consultar(){
 
 const matriculaDigitada =
@@ -89,7 +97,6 @@ if(!matriculaDigitada){
 alert("Digite uma matrícula")
 return
 }
-
 
 let minhaLat=null
 let minhaLon=null
@@ -103,10 +110,7 @@ minhaLon = minhaPos.longitude
 
 }catch(e){}
 
-
-
 const resposta = await fetch("seu_arquivo.csv")
-
 const texto = await resposta.text()
 
 const linhas = texto.split("\n")
@@ -114,33 +118,41 @@ const linhas = texto.split("\n")
 let latEncontrada=null
 let lonEncontrada=null
 
+let todasMatriculas=[]
 
 for(let i=1;i<linhas.length;i++){
 
 const colunas = linhas[i].split(";")
 
 const matricula = colunas[0]?.trim()
+const lat = parseFloat(colunas[1])
+const lon = parseFloat(colunas[2])
+
+if(matricula && !isNaN(lat) && !isNaN(lon)){
+
+todasMatriculas.push({
+matricula:matricula,
+lat:lat,
+lon:lon
+})
+
+}
 
 if(matricula === matriculaDigitada){
 
-latEncontrada = parseFloat(colunas[1])
-lonEncontrada = parseFloat(colunas[2])
+latEncontrada = lat
+lonEncontrada = lon
 
 }
 
 }
-
-
 
 if(latEncontrada === null){
 
 document.getElementById("resultado").innerHTML="Matrícula não encontrada"
-
 return
 
 }
-
-
 
 if(!mapa){
 
@@ -152,18 +164,15 @@ maxZoom:19
 
 }
 
-
-
 if(marcadorMatricula){
 mapa.removeLayer(marcadorMatricula)
 }
 
 marcadorMatricula =
-L.marker([latEncontrada,lonEncontrada])
+L.marker([latEncontrada,lonEncontrada],{icon:iconeMatricula})
 .addTo(mapa)
-.bindPopup("Matrícula")
-
-
+.bindPopup("Matrícula pesquisada")
+.openPopup()
 
 if(minhaLat){
 
@@ -172,17 +181,15 @@ mapa.removeLayer(marcadorUsuario)
 }
 
 marcadorUsuario =
-L.marker([minhaLat,minhaLon])
+L.marker([minhaLat,minhaLon],{icon:iconeUsuario})
 .addTo(mapa)
 .bindPopup("Sua localização")
 
 }
 
-
-
 mapa.setView([latEncontrada,lonEncontrada],15)
 
-
+let resultadoHTML = "📍 Matrícula encontrada<br><br>"
 
 if(minhaLat){
 
@@ -193,11 +200,49 @@ latEncontrada,
 lonEncontrada
 )
 
-document.getElementById("resultado").innerHTML =
-`📍 Matrícula encontrada<br><br>
-📏 Distância da sua localização: ${distUsuario.toFixed(2)} km`
+resultadoHTML += `📏 Distância da sua localização: ${distUsuario.toFixed(2)} km<br><br>`
 
 }
+
+let proximas = []
+
+for(let item of todasMatriculas){
+
+if(item.matricula !== matriculaDigitada){
+
+const d = distancia(
+latEncontrada,
+lonEncontrada,
+item.lat,
+item.lon
+)
+
+proximas.push({
+matricula:item.matricula,
+distancia:d
+})
+
+}
+
+}
+
+proximas.sort((a,b)=>a.distancia-b.distancia)
+
+resultadoHTML += "<b>3 Matrículas mais próximas:</b><br><br>"
+
+for(let i=0;i<3;i++){
+
+if(proximas[i]){
+
+resultadoHTML +=
+`${i+1}️⃣ Matrícula: ${proximas[i].matricula}
+ — ${proximas[i].distancia.toFixed(2)} km<br>`
+
+}
+
+}
+
+document.getElementById("resultado").innerHTML = resultadoHTML
 
 }
 

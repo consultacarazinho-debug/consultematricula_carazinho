@@ -20,6 +20,7 @@
 
 <script>
 
+// CALCULAR DISTÂNCIA ENTRE DOIS PONTOS
 function distancia(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -34,12 +35,46 @@ function distancia(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// PEGAR LOCALIZAÇÃO DO USUÁRIO
+function pegarLocalizacao() {
+  return new Promise((resolve, reject) => {
+
+    if (!navigator.geolocation) {
+      reject("Geolocalização não suportada");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude
+        });
+      },
+      () => reject("Usuário não permitiu localização")
+    );
+
+  });
+}
+
 async function consultar() {
 
   const matriculaDigitada = document.getElementById("matricula").value.trim();
+
   if (!matriculaDigitada) {
     alert("Digite uma matrícula!");
     return;
+  }
+
+  let minhaLat = null;
+  let minhaLon = null;
+
+  try {
+    const minhaPos = await pegarLocalizacao();
+    minhaLat = minhaPos.latitude;
+    minhaLon = minhaPos.longitude;
+  } catch(e) {
+    console.log("Usuário não permitiu localização");
   }
 
   try {
@@ -49,6 +84,8 @@ async function consultar() {
     const linhas = texto.split("\n");
 
     let dados = [];
+    let latitude = null;
+    let longitude = null;
 
     for (let i = 1; i < linhas.length; i++) {
 
@@ -60,18 +97,27 @@ async function consultar() {
       if (colunas.length < 3) continue;
 
       const matricula = colunas[0].trim();
-      const latitude = parseFloat(colunas[1]);
-      const longitude = parseFloat(colunas[2]);
+      const lat = parseFloat(colunas[1]);
+      const lon = parseFloat(colunas[2]);
 
-      if (!latitude || !longitude) continue;
+      if (!lat || !lon) continue;
 
-      dados.push({matricula, latitude, longitude});
+      dados.push({matricula, latitude: lat, longitude: lon});
 
       if (matricula === matriculaDigitada) {
 
-        // MOSTRAR MAPA
-        document.getElementById("mapa").src =
+        latitude = lat;
+        longitude = lon;
+
+        // GERAR MAPA
+        let mapaURL =
         `https://www.openstreetmap.org/export/embed.html?bbox=${longitude-0.01},${latitude-0.01},${longitude+0.01},${latitude+0.01}&layer=mapnik&marker=${latitude},${longitude}`;
+
+        if (minhaLat && minhaLon) {
+          mapaURL += `&marker=${minhaLat},${minhaLon}`;
+        }
+
+        document.getElementById("mapa").src = mapaURL;
 
         // BUSCAR ENDEREÇO
         const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
@@ -84,6 +130,20 @@ async function consultar() {
         🏠 Endereço:<br>
         ${geoData.display_name}<br><br>`;
 
+        // DISTÂNCIA DO USUÁRIO
+        if (minhaLat && minhaLon) {
+
+          const distUsuario = distancia(
+            minhaLat,
+            minhaLon,
+            latitude,
+            longitude
+          );
+
+          document.getElementById("resultado").innerHTML +=
+          `📏 Distância da sua localização: ${distUsuario.toFixed(2)} km<br><br>`;
+        }
+
       }
     }
 
@@ -91,11 +151,12 @@ async function consultar() {
     let resultados = [];
 
     for (let item of dados) {
+
       if (item.matricula === matriculaDigitada) continue;
 
       const d = distancia(
-        dados.find(d => d.matricula === matriculaDigitada)?.latitude,
-        dados.find(d => d.matricula === matriculaDigitada)?.longitude,
+        latitude,
+        longitude,
         item.latitude,
         item.longitude
       );
@@ -103,6 +164,7 @@ async function consultar() {
       if (!isNaN(d)) {
         resultados.push({...item, distancia: d});
       }
+
     }
 
     resultados.sort((a,b) => a.distancia - b.distancia);
@@ -112,7 +174,7 @@ async function consultar() {
     if (proximos.length > 0) {
 
       document.getElementById("resultado").innerHTML +=
-      "<br>🔎 3 Matrículas mais próximas:<br>";
+      "🔎 3 Matrículas mais próximas:<br>";
 
       proximos.forEach(p => {
         document.getElementById("resultado").innerHTML +=
@@ -122,9 +184,12 @@ async function consultar() {
     }
 
   } catch (erro) {
+
     document.getElementById("resultado").innerHTML =
     "Erro ao carregar o CSV";
+
   }
+
 }
 
 </script>

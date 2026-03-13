@@ -1,7 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Consulta de Matrícula</title>
+</head>
+
+<body>
+
+<h2>Consultar Localização pela Matrícula</h2>
+
+<input type="text" id="matricula" placeholder="Digite a matrícula">
+<button onclick="consultar()">Consultar</button>
+
+<p id="resultado"></p>
+
 <script>
 async function consultar() {
-alert("Botão funcionando!");
-const matriculaDigitada = document.getElementById("matricula").value.trim();
+
+  const matriculaDigitada = document.getElementById("matricula").value.trim();
 
   if (!matriculaDigitada) {
     document.getElementById("resultado").innerHTML = "Digite uma matrícula!";
@@ -22,11 +38,9 @@ const matriculaDigitada = document.getElementById("matricula").value.trim();
       let colunas = linha.split(";");
       if (colunas.length < 3) colunas = linha.split(",");
 
-      const matricula = colunas[0]?.trim();
-      const latitude = colunas[1]?.trim();
-      const longitude = colunas[2]?.trim();
-
-      if (!matricula || !latitude || !longitude) continue;
+      const matricula = colunas[0].trim();
+      const latitude = colunas[1].trim();
+      const longitude = colunas[2].trim();
 
       if (matricula === matriculaDigitada) {
 
@@ -40,7 +54,6 @@ const matriculaDigitada = document.getElementById("matricula").value.trim();
 
         return;
       }
-
     }
 
     document.getElementById("resultado").innerHTML = "Matrícula não encontrada";
@@ -51,3 +64,5 @@ const matriculaDigitada = document.getElementById("matricula").value.trim();
 }
 </script>
 
+</body>
+</html>

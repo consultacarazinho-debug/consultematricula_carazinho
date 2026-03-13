@@ -20,175 +20,206 @@
 
 <script>
 
-// CALCULAR DISTÂNCIA ENTRE DOIS PONTOS
+// FUNÇÃO DISTÂNCIA
 function distancia(lat1, lon1, lat2, lon2) {
+
   const R = 6371;
+
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
 
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) *
-            Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI/180) *
+    Math.cos(lat2 * Math.PI/180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
   return R * c;
+
 }
 
 // PEGAR LOCALIZAÇÃO DO USUÁRIO
-function pegarLocalizacao() {
-  return new Promise((resolve, reject) => {
+function pegarLocalizacao(){
 
-    if (!navigator.geolocation) {
-      reject("Geolocalização não suportada");
+  return new Promise((resolve,reject)=>{
+
+    if(!navigator.geolocation){
+      reject();
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+
+      (pos)=>{
         resolve({
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude
-        });
+        })
       },
-      () => reject("Usuário não permitiu localização")
-    );
 
-  });
+      ()=>{
+        reject()
+      }
+
+    )
+
+  })
+
 }
 
-async function consultar() {
+async function consultar(){
 
-  const matriculaDigitada = document.getElementById("matricula").value.trim();
+const matriculaDigitada =
+document.getElementById("matricula").value.trim();
 
-  if (!matriculaDigitada) {
-    alert("Digite uma matrícula!");
-    return;
-  }
+if(!matriculaDigitada){
+alert("Digite uma matrícula")
+return
+}
 
-  let minhaLat = null;
-  let minhaLon = null;
+let minhaLat = null
+let minhaLon = null
 
-  try {
-    const minhaPos = await pegarLocalizacao();
-    minhaLat = minhaPos.latitude;
-    minhaLon = minhaPos.longitude;
-  } catch(e) {
-    console.log("Usuário não permitiu localização");
-  }
+try{
 
-  try {
+const minhaPos = await pegarLocalizacao()
 
-    const resposta = await fetch("seu_arquivo.csv");
-    const texto = await resposta.text();
-    const linhas = texto.split("\n");
+minhaLat = minhaPos.latitude
+minhaLon = minhaPos.longitude
 
-    let dados = [];
-    let latitude = null;
-    let longitude = null;
+}catch(e){}
 
-    for (let i = 1; i < linhas.length; i++) {
+// CARREGAR CSV
 
-      const linha = linhas[i].trim();
-      if (!linha) continue;
+const resposta = await fetch("seu_arquivo.csv")
 
-      const colunas = linha.split(";");
+const texto = await resposta.text()
 
-      if (colunas.length < 3) continue;
+const linhas = texto.split("\n")
 
-      const matricula = colunas[0].trim();
-      const lat = parseFloat(colunas[1]);
-      const lon = parseFloat(colunas[2]);
+let dados = []
 
-      if (!lat || !lon) continue;
+let latEncontrada = null
+let lonEncontrada = null
 
-      dados.push({matricula, latitude: lat, longitude: lon});
+for(let i=1;i<linhas.length;i++){
 
-      if (matricula === matriculaDigitada) {
+const linha = linhas[i].trim()
 
-        latitude = lat;
-        longitude = lon;
+if(!linha) continue
 
-        // GERAR MAPA
-        let mapaURL =
-        `https://www.openstreetmap.org/export/embed.html?bbox=${longitude-0.01},${latitude-0.01},${longitude+0.01},${latitude+0.01}&layer=mapnik&marker=${latitude},${longitude}`;
+const colunas = linha.split(";")
 
-        if (minhaLat && minhaLon) {
-          mapaURL += `&marker=${minhaLat},${minhaLon}`;
-        }
+const matricula = colunas[0].trim()
 
-        document.getElementById("mapa").src = mapaURL;
+const lat = parseFloat(colunas[1])
+const lon = parseFloat(colunas[2])
 
-        // BUSCAR ENDEREÇO
-        const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-        const geoData = await geo.json();
+dados.push({
+matricula:matricula,
+latitude:lat,
+longitude:lon
+})
 
-        document.getElementById("resultado").innerHTML =
-        `📍 Matrícula encontrada:<br>
-        Latitude: ${latitude}<br>
-        Longitude: ${longitude}<br><br>
-        🏠 Endereço:<br>
-        ${geoData.display_name}<br><br>`;
+if(matricula === matriculaDigitada){
 
-        // DISTÂNCIA DO USUÁRIO
-        if (minhaLat && minhaLon) {
+latEncontrada = lat
+lonEncontrada = lon
 
-          const distUsuario = distancia(
-            minhaLat,
-            minhaLon,
-            latitude,
-            longitude
-          );
+}
 
-          document.getElementById("resultado").innerHTML +=
-          `📏 Distância da sua localização: ${distUsuario.toFixed(2)} km<br><br>`;
-        }
+}
 
-      }
-    }
+// SE NÃO ENCONTROU
 
-    // CALCULAR 3 MAIS PRÓXIMAS
-    let resultados = [];
+if(latEncontrada === null){
 
-    for (let item of dados) {
+document.getElementById("resultado").innerHTML =
+"Matrícula não encontrada"
 
-      if (item.matricula === matriculaDigitada) continue;
+return
 
-      const d = distancia(
-        latitude,
-        longitude,
-        item.latitude,
-        item.longitude
-      );
+}
 
-      if (!isNaN(d)) {
-        resultados.push({...item, distancia: d});
-      }
+// MOSTRAR MAPA
 
-    }
+document.getElementById("mapa").src =
+`https://www.openstreetmap.org/export/embed.html?bbox=${lonEncontrada-0.01},${latEncontrada-0.01},${lonEncontrada+0.01},${latEncontrada+0.01}&layer=mapnik&marker=${latEncontrada},${lonEncontrada}`
 
-    resultados.sort((a,b) => a.distancia - b.distancia);
 
-    let proximos = resultados.slice(0,3);
+// BUSCAR ENDEREÇO
 
-    if (proximos.length > 0) {
+const geo = await fetch(
+`https://nominatim.openstreetmap.org/reverse?lat=${latEncontrada}&lon=${lonEncontrada}&format=json`
+)
 
-      document.getElementById("resultado").innerHTML +=
-      "🔎 3 Matrículas mais próximas:<br>";
+const geoData = await geo.json()
 
-      proximos.forEach(p => {
-        document.getElementById("resultado").innerHTML +=
-        `➡ ${p.matricula} (${p.distancia.toFixed(2)} km)<br>`;
-      });
+document.getElementById("resultado").innerHTML =
 
-    }
+`📍 Matrícula encontrada<br><br>
 
-  } catch (erro) {
+Latitude: ${latEncontrada}<br>
+Longitude: ${lonEncontrada}<br><br>
 
-    document.getElementById("resultado").innerHTML =
-    "Erro ao carregar o CSV";
+🏠 ${geoData.display_name}<br><br>`
 
-  }
+
+// DISTÂNCIA DO USUÁRIO
+
+if(minhaLat){
+
+const distUsuario = distancia(
+minhaLat,
+minhaLon,
+latEncontrada,
+lonEncontrada
+)
+
+document.getElementById("resultado").innerHTML +=
+
+`📏 Distância da sua localização: ${distUsuario.toFixed(2)} km<br><br>`
+
+}
+
+
+// 3 MAIS PRÓXIMAS
+
+let resultados = []
+
+for(let item of dados){
+
+if(item.matricula === matriculaDigitada) continue
+
+const d = distancia(
+latEncontrada,
+lonEncontrada,
+item.latitude,
+item.longitude
+)
+
+resultados.push({
+...item,
+distancia:d
+})
+
+}
+
+resultados.sort((a,b)=>a.distancia-b.distancia)
+
+let proximos = resultados.slice(0,3)
+
+document.getElementById("resultado").innerHTML +=
+"🔎 3 Matrículas mais próximas:<br>"
+
+proximos.forEach(p=>{
+
+document.getElementById("resultado").innerHTML +=
+`➡ ${p.matricula} (${p.distancia.toFixed(2)} km)<br>`
+
+})
 
 }
 

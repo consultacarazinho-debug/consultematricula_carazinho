@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta charset="UTF-8">
@@ -143,10 +144,19 @@ return
 
 }
 
-// MOSTRAR MAPA
+// MAPA COM LOCALIZAÇÃO DA MATRÍCULA + LOCALIZAÇÃO DO USUÁRIO
 
-document.getElementById("mapa").src =
-`https://www.openstreetmap.org/export/embed.html?bbox=${lonEncontrada-0.01},${latEncontrada-0.01},${lonEncontrada+0.01},${latEncontrada+0.01}&layer=mapnik&marker=${latEncontrada},${lonEncontrada}`
+let urlMapa =
+`https://www.openstreetmap.org/export/embed.html?bbox=${lonEncontrada-0.02},${latEncontrada-0.02},${lonEncontrada+0.02},${latEncontrada+0.02}&layer=mapnik&marker=${latEncontrada},${lonEncontrada}`
+
+if(minhaLat){
+
+urlMapa =
+`https://www.openstreetmap.org/export/embed.html?bbox=${lonEncontrada-0.02},${latEncontrada-0.02},${lonEncontrada+0.02},${latEncontrada+0.02}&layer=mapnik&marker=${latEncontrada},${lonEncontrada}&marker=${minhaLat},${minhaLon}`
+
+}
+
+document.getElementById("mapa").src = urlMapa
 
 
 // BUSCAR ENDEREÇO
